@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Voice Agent</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #0f0f13;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 { font-size: 1.6rem; margin-bottom: 8px; }
+    p.sub { color: #888; font-size: 0.9rem; margin-bottom: 40px; }
+
+    .orb {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #4f46e5, #1e1b4b);
+      margin-bottom: 32px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .orb.listening {
+      box-shadow: 0 0 0 12px rgba(99,102,241,0.2);
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+    .orb.speaking {
+      box-shadow: 0 0 0 20px rgba(99,102,241,0.3);
+      animation: pulse-ring 0.8s ease-out infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0   rgba(99,102,241,0.4); }
+      100% { box-shadow: 0 0 0 24px rgba(99,102,241,0);   }
+    }
+
+    #status {
+      font-size: 0.95rem;
+      color: #a5b4fc;
+      margin-bottom: 24px;
+      min-height: 1.4rem;
+      letter-spacing: 0.03em;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+    button {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    #connect-btn    { background: #4f46e5; color: #fff; }
+    #disconnect-btn { background: #3f3f50; color: #ccc; }
+
+    select {
+      background: #1a1a24;
+      color: #c7c7d4;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎙️ Live Voice Agent</h1>
+  <p class="sub">Speak naturally — no button to hold. Just talk.</p>
+
+  <div class="orb" id="orb"></div>
+  <div id="status">Disconnected</div>
+
+  <select id="lang-select">
+    <option value="hi-IN">Hindi (hi-IN)</option>
+    <option value="en-IN">English India (en-IN)</option>
+  </select>
+
+  <div class="btn-row">
+    <button id="connect-btn">Connect</button>
+    <button id="disconnect-btn" disabled>Disconnect</button>
+  </div>
+
+  <script src="agent.js"></script>
+  <script>
+    const orb           = document.getElementById('orb');
+    const statusEl      = document.getElementById('status');
+    const connectBtn    = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const langSelect    = document.getElementById('lang-select');
+
+    class UIVoiceAgent extends VoiceAgent {
+      _onConnected() {
+        statusEl.textContent = '🟢 Listening...';
+        orb.className = 'orb listening';
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+        langSelect.disabled = true;
+      }
+      _onDisconnected() {
+        statusEl.textContent = 'Disconnected';
+        orb.className = 'orb';
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        langSelect.disabled = false;
+      }
+      _onBotStartedSpeaking() {
+        statusEl.textContent = '🤖 Bot speaking...';
+        orb.className = 'orb speaking';
+      }
+      _onBotStoppedSpeaking() {
+        statusEl.textContent = '🟢 Listening...';
+        orb.className = 'orb listening';
+      }
+      _onThinking() {
+        statusEl.textContent = '💭 Thinking...';
+        orb.className = 'orb';
+      }
+      _onError(data) {
+        statusEl.textContent = `❌ ${data?.message || 'Error — check console'}`;
+        orb.className = 'orb';
+      }
+    }
+
+    window.agent = new UIVoiceAgent('ws://localhost:8804/ws');
+
+    connectBtn.onclick = () => agent.connect(langSelect.value);
+    disconnectBtn.onclick = () => agent.disconnect();
+  </script>
+
+</body>
+</html>
