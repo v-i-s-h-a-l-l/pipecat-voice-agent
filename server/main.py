@@ -1,12 +1,12 @@
 import asyncio
 import uuid
 from contextlib import asynccontextmanager
-
+from fastapi.responses import JSONResponse
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pipecat.pipeline.runner import PipelineRunner
-
+from config import CEREBRAS_API_KEY, SARVAM_API_KEY
 from pipeline import create_pipeline
 
 
@@ -31,6 +31,21 @@ app.add_middleware(
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/ready")
+async def ready():
+    missing = []
+    if not CEREBRAS_API_KEY:
+        missing.append("CEREBRAS_API_KEY")
+    if not SARVAM_API_KEY:
+        missing.append("SARVAM_API_KEY")
+    if missing:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not_ready", "missing": missing},
+        )
+    return {"status": "ready"}
 
 
 @app.websocket("/ws")
