@@ -93,8 +93,13 @@ Your goal is to help users quickly, clearly, and naturally in realtime voice con
 """
 
 
-async def create_pipeline(websocket, language: str = "hi-IN"):
-    logger.info(f"Creating pipeline for language: {language}")
+async def create_pipeline(
+    websocket,
+    language: str = "hi-IN",
+    session_id: str | None = None,
+):
+    sid = session_id or "-"
+    logger.info("Creating pipeline | session_id={} language={}", sid, language)
 
     # -- Transport
     # RTVIProcessor() has NO transport= argument so it does NOT disable audio on start.
@@ -119,14 +124,14 @@ async def create_pipeline(websocket, language: str = "hi-IN"):
             ),
         ),
     )
-    logger.info("Transport created")
+    logger.info("Transport created | session_id={}", sid)
 
     # -- Smart Turn
     smart_turn_stop = TurnAnalyzerUserTurnStopStrategy(
         turn_analyzer=LocalSmartTurnAnalyzerV3()
     )
     transcription_turn_start = TranscriptionUserTurnStartStrategy(use_interim=True)
-    logger.info("Turn strategies created")
+    logger.info("Turn strategies created | session_id={}", sid)
 
     # -- STT
     # vad_signals=False: VAD is handled by Silero in the transport, not by Sarvam
@@ -141,7 +146,7 @@ async def create_pipeline(websocket, language: str = "hi-IN"):
             high_vad_sensitivity=True,
         ),
     )
-    logger.info("STT service created")
+    logger.info("STT service created | session_id={}", sid)
 
     # -- LLM
     llm = CerebrasLLMService(
@@ -152,7 +157,7 @@ async def create_pipeline(websocket, language: str = "hi-IN"):
             max_completion_tokens=300,
         ),
     )
-    logger.info("LLM service created")
+    logger.info("LLM service created | session_id={}", sid)
 
     # -- TTS
     tts = SarvamTTSService(
@@ -168,16 +173,16 @@ async def create_pipeline(websocket, language: str = "hi-IN"):
             temperature=0.7,
         ),
     )
-    logger.info("TTS service created")
+    logger.info("TTS service created | session_id={}", sid)
 
     # -- Custom processors
     pivot_detector = PivotDetectorProcessor()
     naturalizer = ResponseNaturalizerProcessor(add_starters=True)
-    logger.info("Custom processors created")
+    logger.info("Custom processors created | session_id={}", sid)
 
     # -- RTVI: no transport= so it does NOT gate audio behind client-ready handshake
     rtvi = RTVIProcessor()
-    logger.info("RTVI processor created")
+    logger.info("RTVI processor created | session_id={}", sid)
 
     # -- LLM context
     context = LLMContext(messages=[{"role": "system", "content": SYSTEM_PROMPT}])
@@ -192,7 +197,7 @@ async def create_pipeline(websocket, language: str = "hi-IN"):
         ),
         assistant_params=LLMAssistantAggregatorParams(),
     )
-    logger.info("Context aggregators created")
+    logger.info("Context aggregators created | session_id={}", sid)
 
     # -- Pipeline
     pipeline = Pipeline(
@@ -209,7 +214,7 @@ async def create_pipeline(websocket, language: str = "hi-IN"):
             transport.output(),  # stream audio to browser
         ]
     )
-    logger.info("Pipeline assembled")
+    logger.info("Pipeline assembled | session_id={}", sid)
 
     task = PipelineTask(
         pipeline,
@@ -222,6 +227,6 @@ async def create_pipeline(websocket, language: str = "hi-IN"):
         ),
         observers=[RTVIObserver(rtvi)],
     )
-    logger.info("Pipeline task created -- ready")
+    logger.info("Pipeline task created -- ready | session_id={}", sid)
 
     return transport, task

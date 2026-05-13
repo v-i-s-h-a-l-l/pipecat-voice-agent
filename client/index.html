@@ -142,7 +142,7 @@
       }
     }
 
-    window.agent = new UIVoiceAgent('ws://localhost:8806/ws');
+    window.agent = new UIVoiceAgent('ws://localhost:8807/ws');
 
     connectBtn.onclick = () => agent.connect(langSelect.value);
     disconnectBtn.onclick = () => agent.disconnect();

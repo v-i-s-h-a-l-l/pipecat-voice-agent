@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -34,8 +35,14 @@ async def health():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    session_id = str(uuid.uuid4())
+
     await websocket.accept()
-    logger.info(f"Client connected: {websocket.client}")
+    logger.info(
+        "Client connected | session_id={} client={}",
+        session_id,
+        websocket.client,
+    )
 
     # Accept ?lang=hi-IN or ?lang=en-IN
     language = websocket.query_params.get("lang", "hi-IN")
@@ -45,20 +52,27 @@ async def websocket_endpoint(websocket: WebSocket):
 
         @transport.event_handler("on_client_connected")
         async def on_connected(t, ws):
-            logger.info("Client connected — pipeline running")
+            logger.info("Pipeline running | session_id={}", session_id)
 
         @transport.event_handler("on_client_disconnected")
         async def on_disconnected(t, ws):
-            logger.info("Client disconnected — stopping pipeline")
+            logger.info(
+                "Client disconnected — stopping pipeline | session_id={}", session_id
+            )
             await task.cancel()
 
         runner = PipelineRunner()
         await runner.run(task)
 
     except WebSocketDisconnect:
-        logger.info("WebSocket disconnected cleanly")
+        logger.info("WebSocket disconnected cleanly | session_id={}", session_id)
     except Exception as e:
-        logger.error(f"Pipeline error: {e}", exc_info=True)
+        logger.error(
+            "Pipeline error | session_id={} err={}",
+            session_id,
+            e,
+            exc_info=True,
+        )
         try:
             await websocket.close()
         except Exception:
