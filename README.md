@@ -25,6 +25,7 @@ Create a `.env` file at project root (`c:\voice-agent\.env`) with:
 GROQ_API_KEY=your_groq_key
 SARVAM_API_KEY=your_sarvam_key
 CEREBRAS_API_KEY=your_cerebras_key
+CARTESIA_API_KEY=your_cartesia_key
 HOST=0.0.0.0
 PORT=8805
 ```
