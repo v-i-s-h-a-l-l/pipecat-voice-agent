@@ -26,14 +26,11 @@ PIVOT_PATTERNS = [
     r"\blet me ask you\b",
     r"\bquick question\b",
     r"\bone more thing\b",
-    # Hindi/Hinglish pivots
     r"\bruko\b",
     r"\bek second\b",
     r"\balag baat\b",
     r"\bwaise\b",
 ]
-
-
 class PivotDetectorProcessor(FrameProcessor):
     """
     Detects mid-conversation topic changes (pivots) and handles them gracefully.

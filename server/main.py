@@ -6,6 +6,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pipecat.pipeline.runner import PipelineRunner
+from pipecat.frames.frames import LLMMessagesAppendFrame
 from config import CEREBRAS_API_KEY, SARVAM_API_KEY
 from pipeline import create_pipeline
 
@@ -68,6 +69,10 @@ async def websocket_endpoint(websocket: WebSocket):
         @transport.event_handler("on_client_connected")
         async def on_connected(t, ws):
             logger.info("Pipeline running | session_id={}", session_id)
+            # Trigger Louie's greeting immediately
+            await task.queue_frames([LLMMessagesAppendFrame(
+                messages=[{"role": "system", "content": "The user just connected. Greet them warmly — introduce yourself as Louie in one short sentence and ask how you can help. Keep it natural and brief."}]
+            )])
 
         @transport.event_handler("on_client_disconnected")
         async def on_disconnected(t, ws):
