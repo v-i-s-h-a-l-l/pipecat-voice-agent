@@ -1,0 +1,12 @@
+.env
+.venv/
+.uv/
+__pycache__/
+*.pyc
+*.pyo
+qdrant_storage/
+diagnostics/
+*.lock
+*.exe
+.DS_Store
+pipecat-voice-agent/

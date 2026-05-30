@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Voice Agent</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #0f0f13;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 { font-size: 1.6rem; margin-bottom: 8px; }
+    p.sub { color: #888; font-size: 0.9rem; margin-bottom: 40px; }
+
+    .orb {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #4f46e5, #1e1b4b);
+      margin-bottom: 32px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .orb.listening {
+      box-shadow: 0 0 0 12px rgba(99,102,241,0.2);
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+    .orb.speaking {
+      box-shadow: 0 0 0 20px rgba(99,102,241,0.3);
+      animation: pulse-ring 0.8s ease-out infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0   rgba(99,102,241,0.4); }
+      100% { box-shadow: 0 0 0 24px rgba(99,102,241,0);   }
+    }
+
+    #status {
+      font-size: 0.95rem;
+      color: #a5b4fc;
+      margin-bottom: 28px;
+      min-height: 1.4rem;
+      letter-spacing: 0.03em;
+    }
+
+    .controls {
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      text-align: left;
+    }
+
+    .field label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+    }
+
+    .field select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 40px 10px 14px;
+      background-color: #1e1e28;
+      color: #f3f4f6;
+      border: 1px solid #3f3f50;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      line-height: 1.4;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a5b4fc' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+
+    .field select:hover:not(:disabled) {
+      border-color: #6366f1;
+    }
+
+    .field select:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    .field select:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .field select option {
+      background-color: #1e1e28;
+      color: #f3f4f6;
+      padding: 8px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+    button {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    #connect-btn    { background: #4f46e5; color: #fff; }
+    #disconnect-btn { background: #3f3f50; color: #ccc; }
+  </style>
+</head>
+<body>
+
+  <h1>🎙️ Live Voice Agent</h1>
+  <p class="sub">Speak naturally — no button to hold. Just talk.</p>
+
+  <div class="orb" id="orb"></div>
+  <div id="status">Disconnected</div>
+
+  <div class="controls">
+    <div class="field">
+      <label for="voice-select">Voice</label>
+      <select id="voice-select">
+        <option value="netra" selected>Netra</option>
+        <option value="parvaty">Parvaty</option>
+        <option value="rohan">Rohan</option>
+        <option value="sneha">Sneha</option>
+        <option value="vishal">Vishal</option>
+        <option value="sagar">Sagar</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button id="connect-btn">Connect</button>
+    <button id="disconnect-btn" disabled>Disconnect</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="agent.js"></script>
+  <script>
+    const orb           = document.getElementById('orb');
+    const statusEl      = document.getElementById('status');
+    const connectBtn    = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const voiceSelect   = document.getElementById('voice-select');
+    const cfg = window.VOICE_AGENT_CONFIG || {};
+
+    if (cfg.defaultVoice) voiceSelect.value = cfg.defaultVoice;
+
+    class UIVoiceAgent extends VoiceAgent {
+      _onConnected() {
+        statusEl.textContent = '🟢 Listening...';
+        orb.className = 'orb listening';
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+        voiceSelect.disabled = true;
+      }
+      _onDisconnected() {
+        statusEl.textContent = 'Disconnected';
+        orb.className = 'orb';
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        voiceSelect.disabled = false;
+      }
+      _onBotStartedSpeaking() {
+        statusEl.textContent = '🤖 Bot speaking...';
+        orb.className = 'orb speaking';
+      }
+      _onBotStoppedSpeaking() {
+        statusEl.textContent = '🟢 Listening...';
+        orb.className = 'orb listening';
+      }
+      _onThinking() {
+        statusEl.textContent = '💭 Thinking...';
+        orb.className = 'orb';
+      }
+      _onError(data) {
+        statusEl.textContent = `❌ ${data?.message || 'Error — check console'}`;
+        orb.className = 'orb';
+      }
+    }
+
+    window.agent = new UIVoiceAgent(cfg.wsBaseUrl || 'ws://localhost:8854/ws');
+
+    connectBtn.onclick = () => agent.connect(
+      cfg.defaultLang || 'en-IN',
+      voiceSelect.value || cfg.defaultVoice || 'netra'
+    );
+    disconnectBtn.onclick = () => agent.disconnect();
+  </script>
+
+</body>
+</html>
